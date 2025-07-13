@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -47,9 +48,11 @@ func main() {
 }
 
 func getQuote(c *gin.Context) {
+	symbols := [5]string {"AAPL", "AMZN", "TSLA", "GOOG", "META"}
+	joinedSymbols := strings.Join(symbols[:], ",")
 	endpointUrl := fmt.Sprintf("%s/stocks/quotes/latest", ALPACA_MARKET_URL)
 
-	resp, err := client.R().SetDebug(true).SetQueryParam("symbols", "AAPL").Get(endpointUrl)
+	resp, err := client.R().SetDebug(true).SetQueryParam("symbols", joinedSymbols).Get(endpointUrl)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch data"})
 		return

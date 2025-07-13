@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	//"strings"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -14,9 +13,15 @@ import (
 )
 
 var client *resty.Client
+var ALPACA_MARKET_URL string
+var ALPACA_API_KEY string
+var ALPACA_SECRET_KEY string
 
 func initResty() {
-	client = resty.New().SetBaseURL(os.Getenv("ALPACA_MARKET_URL")).SetHeader("APCA-API-KEY-ID", os.Getenv("ALPACA_API_KEY")).SetHeader("APCA-API-SECRET-KEY",os.Getenv("ALPACA_SECRET_KEY"))
+	client = resty.New().
+		SetBaseURL(ALPACA_MARKET_URL).
+		SetHeader("APCA-API-KEY-ID", ALPACA_API_KEY).
+		SetHeader("APCA-API-SECRET-KEY",ALPACA_SECRET_KEY)
 }
 
 func main() {
@@ -24,6 +29,10 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	ALPACA_MARKET_URL = os.Getenv("ALPACA_MARKET_URL")
+	ALPACA_API_KEY = os.Getenv("ALPACA_API_KEY")
+	ALPACA_SECRET_KEY = os.Getenv("ALPACA_SECRET_KEY")
 
 	initResty()
 
@@ -38,7 +47,7 @@ func main() {
 }
 
 func getQuote(c *gin.Context) {
-	endpointUrl := fmt.Sprintf("%s/stocks/quotes/latest", os.Getenv("ALPACA_MARKET_URL"))
+	endpointUrl := fmt.Sprintf("%s/stocks/quotes/latest", ALPACA_MARKET_URL)
 
 	resp, err := client.R().SetDebug(true).SetQueryParam("symbols", "AAPL").Get(endpointUrl)
 	if err != nil {

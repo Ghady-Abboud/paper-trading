@@ -39,7 +39,7 @@ func main() {
 
 	router := gin.Default()
 	router.Use(cors.Default())
-	router.GET("/get-quote", getQuote)
+	router.GET("/default-quotes", defaultQuotes)
 
 	err = router.Run(":8080")
 	if err != nil {
@@ -47,7 +47,7 @@ func main() {
 	}
 }
 
-func getQuote(c *gin.Context) {
+func defaultQuotes(c *gin.Context) {
 	symbols := [5]string {"AAPL", "AMZN", "TSLA", "GOOG", "META"}
 	joinedSymbols := strings.Join(symbols[:], ",")
 	endpointUrl := fmt.Sprintf("%s/stocks/quotes/latest", ALPACA_MARKET_URL)

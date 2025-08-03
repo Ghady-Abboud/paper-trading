@@ -55,7 +55,11 @@ func DefaultQuotes(c *gin.Context) {
 	joinedSymbols := strings.Join(symbols[:], ",")
 	endpointUrl := fmt.Sprintf("%s/stocks/quotes/latest", ALPACA_MARKET_URL)
 
-	resp, err := client.R().SetDebug(true).SetQueryParam("symbols", joinedSymbols).Get(endpointUrl)
+	resp, err := client.R().
+								SetDebug(true).
+								SetQueryParam("symbols", joinedSymbols).
+								Get(endpointUrl)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Request to /default-quotes failed"})
 		return
@@ -66,7 +70,10 @@ func DefaultQuotes(c *gin.Context) {
 
 func PlaceOrder(c *gin.Context) {
 	endpointUrl := fmt.Sprintf("%s/orders", ALPACA_TRADING_URL)
-	resp, err := client.R().SetHeader("Content-Type", "application/json").SetBody(`{"symbol":"AAPL","type":"market","time_in_force":"day","qty":"1","side":"buy"}`).Post(endpointUrl)
+	resp, err := client.R().
+										SetHeader("Content-Type", "application/json").
+										SetBody(`{"symbol":"AAPL","type":"market","time_in_force":"day","qty":"1","side":"buy"}`).
+										Post(endpointUrl)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error" : "Request to /place-order failed"})
 	}

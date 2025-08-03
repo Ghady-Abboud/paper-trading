@@ -21,7 +21,7 @@ Build a backend trading simulation system using the Alpaca Paper Trading API, wi
   → Fetch latest stock quotes
 
 ### 2. Order Execution
-- [] POST `/order`  
+- [x] POST `/order`  
   Body: `{ symbol, qty, side, type }`  
   → Places a paper trade via Alpaca
 

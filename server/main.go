@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -40,7 +39,7 @@ func main() {
 
 	router := gin.Default()
 	router.Use(cors.Default())
-	router.GET("/api/default-quotes", DefaultQuotes)
+	router.GET("/api/get-quotes", getQuotes)
 	router.POST("/api/place-order", PlaceOrder)
 	router.GET("/api/get-orders", GetOrders)
 
@@ -50,14 +49,13 @@ func main() {
 	}
 }
 
-func DefaultQuotes(c *gin.Context) {
-	symbols := [5]string {"AAPL", "AMZN", "TSLA", "GOOG", "META"}
-	joinedSymbols := strings.Join(symbols[:], ",")
+func getQuotes(c *gin.Context) {
+	symbol := c.DefaultQuery("symbols", "META")
 	endpointUrl := fmt.Sprintf("%s/stocks/quotes/latest", ALPACA_MARKET_URL)
 
 	resp, err := client.R().
 								SetDebug(true).
-								SetQueryParam("symbols", joinedSymbols).
+								SetQueryParam("symbols", symbol).
 								Get(endpointUrl)
 
 	if err != nil {
@@ -72,7 +70,7 @@ func PlaceOrder(c *gin.Context) {
 	endpointUrl := fmt.Sprintf("%s/orders", ALPACA_TRADING_URL)
 	resp, err := client.R().
 										SetHeader("Content-Type", "application/json").
-										SetBody(`{"symbol":"AAPL","type":"market","time_in_force":"day","qty":"1","side":"buy"}`).
+										SetBody(`{"symbol":"META","type":"market","time_in_force":"day","qty":"1","side":"buy"}`).
 										Post(endpointUrl)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error" : "Request to /place-order failed"})
@@ -90,4 +88,3 @@ func GetOrders(c *gin.Context) {
 	}
 	c.Data(resp.StatusCode(), "application/json", resp.Body())
 }
-

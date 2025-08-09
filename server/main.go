@@ -39,9 +39,9 @@ func main() {
 
 	router := gin.Default()
 	router.Use(cors.Default())
-	router.GET("/api/get-quotes", getQuotes)
+	router.GET("/api/get-quotes", GetQuotes)
 	router.POST("/api/place-order", PlaceOrder)
-	router.GET("/api/get-orders", GetOrders)
+	router.GET("/api/get-orders", GetAllOrders)
 
 	err = router.Run(":8080")
 	if err != nil {
@@ -49,14 +49,14 @@ func main() {
 	}
 }
 
-func getQuotes(c *gin.Context) {
+func GetQuotes(c *gin.Context) {
 	symbol := c.DefaultQuery("symbols", "META")
 	endpointUrl := fmt.Sprintf("%s/stocks/quotes/latest", ALPACA_MARKET_URL)
 
 	resp, err := client.R().
-								SetDebug(true).
-								SetQueryParam("symbols", symbol).
-								Get(endpointUrl)
+							SetDebug(true).
+							SetQueryParam("symbols", symbol).
+							Get(endpointUrl)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Request to /default-quotes failed"})
@@ -66,20 +66,35 @@ func getQuotes(c *gin.Context) {
 	c.Data(resp.StatusCode(), "application/json", resp.Body())
 }
 
+// Test endpoint 
 func PlaceOrder(c *gin.Context) {
+	var orderReq struct {
+		Symbol string `json:"symbol"`
+		Type string `json:"type"`
+		TimeInForce string `json:"time_in_force"`
+		Qty string `json:"qty"`
+		Side string `json:"side"`
+	}
+	
+	if err := c.ShouldBindJSON(&orderReq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
 	endpointUrl := fmt.Sprintf("%s/orders", ALPACA_TRADING_URL)
 	resp, err := client.R().
-										SetHeader("Content-Type", "application/json").
-										SetBody(`{"symbol":"META","type":"market","time_in_force":"day","qty":"1","side":"buy"}`).
-										Post(endpointUrl)
+							SetHeader("Content-Type", "application/json").
+							SetBody(orderReq).
+							Post(endpointUrl)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error" : "Request to /place-order failed"})
+		return
 	}
 
 	c.Data(resp.StatusCode(), "application/json", resp.Body())
 }
 
-func GetOrders(c *gin.Context) {
+func GetAllOrders(c *gin.Context) {
 	endpointUrl := fmt.Sprintf("%s/orders", ALPACA_TRADING_URL)
 
 	resp, err := client.R().Get(endpointUrl)

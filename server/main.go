@@ -42,6 +42,7 @@ func main() {
 	router.GET("/api/get-quotes", GetQuotes)
 	router.POST("/api/place-order", PlaceOrder)
 	router.GET("/api/get-orders", GetAllOrders)
+	router.GET("/api/get-positions", GetOpenPositions)
 
 	err = router.Run(":8080")
 	if err != nil {
@@ -66,7 +67,6 @@ func GetQuotes(c *gin.Context) {
 	c.Data(resp.StatusCode(), "application/json", resp.Body())
 }
 
-// Test endpoint 
 func PlaceOrder(c *gin.Context) {
 	var orderReq struct {
 		Symbol string `json:"symbol"`
@@ -100,6 +100,19 @@ func GetAllOrders(c *gin.Context) {
 	resp, err := client.R().Get(endpointUrl)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Request to /portfolio failed"})
+		return
 	}
+	c.Data(resp.StatusCode(), "application/json", resp.Body())
+}
+
+func GetOpenPositions(c *gin.Context) {
+	endpointUrl := fmt.Sprintf("%s/positions", ALPACA_TRADING_URL)
+
+	resp, err := client.R().Get(endpointUrl)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error" : "Request to /positions failed"})
+		return
+	}
+
 	c.Data(resp.StatusCode(), "application/json", resp.Body())
 }

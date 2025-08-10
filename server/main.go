@@ -43,6 +43,7 @@ func main() {
 	router.POST("/api/place-order", PlaceOrder)
 	router.GET("/api/get-orders", GetAllOrders)
 	router.GET("/api/get-positions", GetOpenPositions)
+	router.GET("/api/get-bars", GetBars)
 
 	err = router.Run(":8080")
 	if err != nil {

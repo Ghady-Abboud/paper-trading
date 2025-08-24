@@ -1,9 +1,9 @@
 package server
 
 import (
+	"context"
 	"log"
 	"net/url"
-	"context"
 
 	"github.com/gorilla/websocket"
 )
@@ -25,7 +25,13 @@ func HandleAlpacaWs(ctx context.Context) {
 
 	err = authenticateAlpacaWs(c)
 	if err != nil {
+		log.Println("Error authenticating", err)
 		return
+	}
+
+	err = subscribeChannel(c)
+	if err != nil {
+		log.Println("Error subscribing to channel", err)
 	}
 
 	defer c.Close()
@@ -53,7 +59,15 @@ func authenticateAlpacaWs(c *websocket.Conn) error {
 	authMsg := `{"action": "auth", "key": "` + ALPACA_API_KEY + `", "secret": "` + ALPACA_SECRET_KEY + `"}`
 	err := c.WriteMessage(websocket.TextMessage, []byte(authMsg))
 	if err != nil {
-		log.Println("Error authenticating", err)
+		return err
+	}
+	return nil
+}
+
+func subscribeChannel(c *websocket.Conn) error {
+	subMsg := `{"action": "subscribe", "quotes": ["AAPL"], "bars": ["*"]}`
+	err := c.WriteMessage(websocket.TextMessage, []byte(subMsg))
+	if err != nil {
 		return err
 	}
 	return nil

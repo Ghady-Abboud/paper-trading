@@ -3,19 +3,12 @@ package server
 import (
 	"log"
 	"net/url"
-	"os"
-	"os/signal"
+	"context"
 
 	"github.com/gorilla/websocket"
 )
 
-func HandleAlpacaWs() {
-
-	log.SetFlags(0)
-	interrupt := make(chan os.Signal, 1)
-	done := make(chan struct{})
-
-	signal.Notify(interrupt, os.Interrupt)
+func HandleAlpacaWs(ctx context.Context) {
 
 	u, err := url.Parse(ALPACA_MARKET_WEBSOCKET_URL)
 	if err != nil {
@@ -38,7 +31,6 @@ func HandleAlpacaWs() {
 	defer c.Close()
 
 	go func() {
-		defer close(done)
 		for {
 			_, msg, err := c.ReadMessage()
 			if err != nil {
@@ -50,13 +42,10 @@ func HandleAlpacaWs() {
 		}
 	}()
 
-	for {
-		select {
-		case <-done:
-			return
-		case <-interrupt:
-			c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-		}
+	for range ctx.Done() {
+		log.Println("Context cancelled, closing websocket connection")
+		c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+		return
 	}
 }
 

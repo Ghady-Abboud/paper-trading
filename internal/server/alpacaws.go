@@ -2,73 +2,81 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/url"
 
-	"github.com/gorilla/websocket"
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 )
 
-func HandleAlpacaWs(ctx context.Context) {
+type authMessage struct {
+	Action string `json:"action"`
+	Key    string `json:"key"`
+	Secret string `json:"secret"`
+}
 
+type subChannelMessage struct {
+	Action string   `json:"action"`
+	Quotes []string `json:"quotes"`
+	Bars   []string `json:"bars"`
+}
+
+func HandleAlpacaWs(ctx context.Context) {
+	var msg interface{}
+
+	log.SetFlags(0)
 	u, err := url.Parse(ALPACA_MARKET_WEBSOCKET_URL)
 	if err != nil {
 		log.Fatal("Error parsing websocket URL:", err)
 	}
 	log.Printf("Connecting to %s", u.String())
 
-	c, resp, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	c, resp, err := websocket.Dial(ctx, u.String(), nil)
 
 	if err != nil {
 		log.Printf("Handshake failed with status %d", resp.StatusCode)
 		log.Fatal("dial:", err)
 	}
+	defer c.CloseNow()
 
-	err = authenticateAlpacaWs(c)
+	err = authenticateAlpacaWs(ctx, c)
 	if err != nil {
 		log.Println("Error authenticating", err)
 		return
 	}
 
-	err = subscribeChannel(c)
+	err = subscribeChannel(ctx, c)
 	if err != nil {
 		log.Println("Error subscribing to channel", err)
-	}
-
-	defer c.Close()
-
-	go func() {
-		for {
-			_, msg, err := c.ReadMessage()
-			if err != nil {
-				log.Println("read:", err)
-				return
-			}
-			log.Printf("recv: %s", msg)
-
-		}
-	}()
-
-	for range ctx.Done() {
-		log.Println("Context cancelled, closing websocket connection")
-		c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 		return
 	}
+
+	fmt.Println("we got here")
+	for {
+		err = wsjson.Read(ctx, c, &msg)
+		if err != nil {
+			log.Println("read:", err)
+			return
+		}
+		log.Printf("recv: %s", msg)
+	}
 }
 
-func authenticateAlpacaWs(c *websocket.Conn) error {
-	authMsg := `{"action": "auth", "key": "` + ALPACA_API_KEY + `", "secret": "` + ALPACA_SECRET_KEY + `"}`
-	err := c.WriteMessage(websocket.TextMessage, []byte(authMsg))
-	if err != nil {
-		return err
+func authenticateAlpacaWs(ctx context.Context, c *websocket.Conn) error {
+	msg := authMessage{
+		Action: "auth",
+		Key:    ALPACA_API_KEY,
+		Secret: ALPACA_SECRET_KEY,
 	}
-	return nil
+	return wsjson.Write(ctx, c, msg)
 }
 
-func subscribeChannel(c *websocket.Conn) error {
-	subMsg := `{"action": "subscribe", "quotes": ["AAPL"], "bars": ["*"]}`
-	err := c.WriteMessage(websocket.TextMessage, []byte(subMsg))
-	if err != nil {
-		return err
+func subscribeChannel(ctx context.Context, c *websocket.Conn) error {
+	msg := subChannelMessage{
+		Action: "subscribe",
+		Quotes: []string{"META"},
+		Bars:   []string{"*"},
 	}
-	return nil
+	return wsjson.Write(ctx, c, msg)
 }

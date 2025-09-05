@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/url"
 
@@ -10,21 +9,32 @@ import (
 	"github.com/coder/websocket/wsjson"
 )
 
-type authMessage struct {
+type AuthenticationMessage struct {
 	Action string `json:"action"`
 	Key    string `json:"key"`
 	Secret string `json:"secret"`
 }
 
-type subChannelMessage struct {
+type SubscriptionMessage struct {
 	Action string   `json:"action"`
 	Quotes []string `json:"quotes"`
 	Bars   []string `json:"bars"`
 }
 
-func HandleAlpacaWs(ctx context.Context) {
-	var msg interface{}
+type Bars struct {
+	T              string  `json:"T"`
+	Symbol         string  `json:"S"`
+	OPrice         float32 `json:"o"`
+	HPrice         float32 `json:"h"`
+	LPrice         float32 `json:"l"`
+	CPrice         float32 `json:"c"`
+	Volume         int     `json:"v"`
+	VolumeWeighted float32 `json:"vw"`
+	NumTrades      int     `json:"n"`
+	TimeStamp      string  `json:"t"`
+}
 
+func HandleAlpacaWs(ctx context.Context) {
 	log.SetFlags(0)
 	u, err := url.Parse(ALPACA_MARKET_WEBSOCKET_URL)
 	if err != nil {
@@ -52,19 +62,22 @@ func HandleAlpacaWs(ctx context.Context) {
 		return
 	}
 
-	fmt.Println("we got here")
+	var msgs []Bars
+
 	for {
-		err = wsjson.Read(ctx, c, &msg)
+		err = wsjson.Read(ctx, c, &msgs)
 		if err != nil {
-			log.Println("read:", err)
+			log.Println(err)
 			return
 		}
-		log.Printf("recv: %s", msg)
+		for _, m := range msgs {
+			log.Printf("recv: %s c=%v t=%s", m.Symbol, m.CPrice, m.TimeStamp)
+		}
 	}
 }
 
 func authenticateAlpacaWs(ctx context.Context, c *websocket.Conn) error {
-	msg := authMessage{
+	msg := AuthenticationMessage{
 		Action: "auth",
 		Key:    ALPACA_API_KEY,
 		Secret: ALPACA_SECRET_KEY,
@@ -73,7 +86,7 @@ func authenticateAlpacaWs(ctx context.Context, c *websocket.Conn) error {
 }
 
 func subscribeChannel(ctx context.Context, c *websocket.Conn) error {
-	msg := subChannelMessage{
+	msg := SubscriptionMessage{
 		Action: "subscribe",
 		Quotes: []string{"META"},
 		Bars:   []string{"*"},

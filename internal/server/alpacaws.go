@@ -17,7 +17,6 @@ type AuthenticationMessage struct {
 
 type SubscriptionMessage struct {
 	Action string   `json:"action"`
-	Quotes []string `json:"quotes"`
 	Bars   []string `json:"bars"`
 }
 
@@ -36,6 +35,7 @@ type Bars struct {
 
 func HandleAlpacaWs(ctx context.Context) {
 	log.SetFlags(0)
+
 	u, err := url.Parse(ALPACA_MARKET_WEBSOCKET_URL)
 	if err != nil {
 		log.Fatal("Error parsing websocket URL:", err)
@@ -67,11 +67,13 @@ func HandleAlpacaWs(ctx context.Context) {
 	for {
 		err = wsjson.Read(ctx, c, &msgs)
 		if err != nil {
-			log.Println(err)
+			c.CloseNow()
 			return
 		}
 		for _, m := range msgs {
-			log.Printf("recv: %s c=%v t=%s", m.Symbol, m.CPrice, m.TimeStamp)
+			if m.T == "b" {
+				log.Printf("recv: %s c=%v t=%s", m.Symbol, m.CPrice, m.TimeStamp)
+			}
 		}
 	}
 }
@@ -88,8 +90,7 @@ func authenticateAlpacaWs(ctx context.Context, c *websocket.Conn) error {
 func subscribeChannel(ctx context.Context, c *websocket.Conn) error {
 	msg := SubscriptionMessage{
 		Action: "subscribe",
-		Quotes: []string{"META"},
-		Bars:   []string{"*"},
+		Bars:   []string{"META"},
 	}
 	return wsjson.Write(ctx, c, msg)
 }

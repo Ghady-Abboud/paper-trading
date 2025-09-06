@@ -11,7 +11,7 @@ func GetQuotes(c *gin.Context) {
 	symbol := c.DefaultQuery("symbols", "META")
 	endpointUrl := fmt.Sprintf("%s/stocks/quotes/latest", ALPACA_MARKET_URL)
 
-	resp, err := Client.R().
+	resp, err := RestyClient.R().
 		SetQueryParam("symbols", symbol).
 		Get(endpointUrl)
 
@@ -38,7 +38,7 @@ func PlaceOrder(c *gin.Context) {
 	}
 
 	endpointUrl := fmt.Sprintf("%s/orders", ALPACA_TRADING_URL)
-	resp, err := Client.R().
+	resp, err := RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(orderReq).
 		Post(endpointUrl)
@@ -53,7 +53,7 @@ func PlaceOrder(c *gin.Context) {
 func GetAllOrders(c *gin.Context) {
 	endpointUrl := fmt.Sprintf("%s/orders", ALPACA_TRADING_URL)
 
-	resp, err := Client.R().Get(endpointUrl)
+	resp, err := RestyClient.R().Get(endpointUrl)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Request to /portfolio failed"})
 		return
@@ -64,7 +64,7 @@ func GetAllOrders(c *gin.Context) {
 func GetOpenPositions(c *gin.Context) {
 	endpointUrl := fmt.Sprintf("%s/positions", ALPACA_TRADING_URL)
 
-	resp, err := Client.R().
+	resp, err := RestyClient.R().
 		Get(endpointUrl)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Request to /positions failed"})
@@ -79,7 +79,7 @@ func GetBars(c *gin.Context) {
 	timeframe := c.DefaultQuery("timeframe", "8Hour")
 
 	endpointUrl := fmt.Sprintf("%s/stocks/bars", ALPACA_MARKET_URL)
-	resp, err := Client.R().
+	resp, err := RestyClient.R().
 		SetQueryParam("symbols", symbol).
 		SetQueryParam("timeframe", timeframe).
 		Get(endpointUrl)

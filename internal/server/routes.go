@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes() *gin.Engine{
+func RegisterRoutes() *gin.Engine {
 	router := gin.Default()
 	router.Use(cors.Default())
 
@@ -14,6 +14,11 @@ func RegisterRoutes() *gin.Engine{
 	router.GET("/api/get-orders", GetAllOrders)
 	router.GET("/api/get-positions", GetOpenPositions)
 	router.GET("/api/get-bars", GetBars)
+
+	manager := NewManager()
+	router.GET("/ws", func(c *gin.Context) {
+		manager.ServeWS(c.Writer, c.Request)
+	})
 
 	return router
 }
